@@ -2,83 +2,56 @@
 .stack 100h
 
 .data
-    num1 db "Enter 1st number: $" 
-    num2 db 13, 10, "Enter 2nd number: $"
-    result db 13, 10, "Sum: $" 
+    num1   db "Enter 1st number: $"
+    num2   db 13,10,"Enter 2nd number: $"
+    result db 13,10,"Sum: $"  
     
-    n1 dw ?
-    n2 dw ?
-    
+    n1 db ?
+    n2 db ?
 
 .code
-
 main proc
     mov ax, @data
     mov ds, ax
 
-    
+    ; print prompt 1
     lea dx, num1
     mov ah, 9
     int 21h
-    
-    xor bx , bx
-    read1:
-        mov ah , 1 
-        int 21h
-        cmp al , 13
-        je store1
-        
-        sub al , '0'
-        xor ah , ah 
-        
-        mov cx , ax
-        mov ax , bx
-        
-        mov si , 10
-        mul ax
-        
-        add ax , cx
-        mov bx , ax
-        jmp read1
-     
-     
-     store1:
-        mov n1, bx
-        
-        ;====inpu 2nd number
-        
-        xor bx, bx
-        read2:
-           mov ah, 1
-           int 21h
-           cmp al, 13
-           je store2
-           
-           sub al , '0'
-           xor ah , ah
-           
-           mov cx, ax
-           mov ax , bx
-           
-           mov si , 10
-           mul si
-           
-           add ax, cx
-           mov bx, ax
-           jmp read2
-    
-    store2:
-        mov n2 , bx 
-        
-        
-        
-        
-           
 
+    ; read digit 1
+    mov ah, 1
+    int 21h
+    sub al, '0'
+    mov n1, al
+
+    ; print prompt 2
+    lea dx, num2
+    mov ah, 9
+    int 21h
+
+    ; read digit 2
+    mov ah, 1
+    int 21h
+    sub al, '0'
+    mov n2 , al
+
+    ;sum
+    mov bl, n1
+    add bl , n2         
+
+    ; print "Sum: "
+    lea dx, result
+    mov ah, 9
+    int 21h
+
+    ; print digit  
     
+    mov dl , bl
+    add dl , '0'
+    mov ah, 2
+    int 21h
 
-
-exit:
     mov ah, 4Ch
     int 21h
 main endp
