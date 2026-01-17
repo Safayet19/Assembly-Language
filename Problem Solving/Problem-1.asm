@@ -11,117 +11,112 @@
 .stack 100h
 
 .data
-prompt  db "Enter text: $"
-
-
-inbuf   db 80, 0, 80 dup(?)
-wordbuf db 80 dup(?)
+prompt db "Enter text: $"
+line   db 200 dup(0)       
 
 .code
 main proc
     mov ax, @data
     mov ds, ax
 
-    ; prompt
-    mov ah, 09h
-    mov dx, offset prompt
+    ; print prompt
+    lea dx, prompt 
+    mov ah, 9
     int 21h
 
-    ; read line
-    mov ah, 0Ah
-    mov dx, offset inbuf
+    ; ===== Read full line into 'line' =====
+    lea si, line
+    xor cx, cx              ; CX = length
+
+read_loop:
+    mov ah, 1            ;read input
+    int 21h     
+
+    cmp al, 13              ; Enter?
+    je  read_done
+
+    mov [si], al            ; store char
+    inc si
+    inc cx
+
+    jmp read_loop
+
+read_done:
+    ; newline
+    mov ah, 2
+    mov dl, 13
+    int 21h
+    mov dl, 10
     int 21h
 
-    ; new line before output
-    mov ah, 02h
-    mov dl, 0Dh
-    int 21h
-    mov dl, 0Ah
-    int 21h
-
-    ; CX = number of typed chars
-    xor cx, cx
-    mov cl, [inbuf+1]
-
-    mov si, offset inbuf+2   ; input chars start here
-    xor bx, bx               ; BX = word length (0..)
+    ; ===== Process buffer and print output =====
+    lea si, line            ; SI = current char
+    mov di, si              ; DI = start of current word
 
 scan:
     cmp cx, 0
-    je  finish_line
+    je  end_line
 
     mov al, [si]
     cmp al, ' '
-    je  got_space
-
-    ; store char into wordbuf[bx]
-    mov [wordbuf+bx], al
-    inc bx
+    je  space_found
 
     inc si
     dec cx
     jmp scan
 
-got_space:
-    ; print current word in reverse (if bx > 0)
-    cmp bx, 0
-    je  only_space
+space_found:
+    ; print word reversed: DI .. (SI-1)
+    mov bx, si
+    dec bx
 
-    mov di, bx
-    dec di
+    cmp bx, di
+    jb  only_space ; empty word (multiple spaces)
 
-print_word1:
-    mov dl, [wordbuf+di]
-    mov ah, 02h
+rev1:
+    mov dl, [bx]
+    mov ah, 2
     int 21h
-
-    cmp di, 0
-    je  done_word1
-    dec di
-    jmp print_word1
-
-done_word1:
-    xor bx, bx               ; reset word length
+    dec bx
+    cmp bx, di
+    jae rev1
 
 only_space:
     ; print the space
     mov dl, ' '
-    mov ah, 02h
+    mov ah, 2
     int 21h
 
     inc si
     dec cx
+    mov di, si
     jmp scan
 
-finish_line:
-    ; print last word in reverse (if any)
-    cmp bx, 0
-    je  done_all
+end_line:
+    mov bx, si
+    dec bx
 
-    mov di, bx
-    dec di
+    cmp bx, di
+    jb  done
 
-print_last:
-    mov dl, [wordbuf+di]
-    mov ah, 02h
+rev_last:
+    mov dl, [bx]
+    mov ah, 2
     int 21h
+    dec bx
+    cmp bx, di
+    jae rev_last
 
-    cmp di, 0
-    je  done_all
-    dec di
-    jmp print_last
-
-done_all:
+done:
     ; newline
-    mov ah, 02h
-    mov dl, 0Dh
+    mov ah, 2
+    mov dl, 13
     int 21h
-    mov dl, 0Ah
+    mov dl, 10
     int 21h
 
     ; exit
-    mov ah, 4Ch
-    mov al, 00h
+    mov ah, 4ch            
     int 21h
 main endp
 
